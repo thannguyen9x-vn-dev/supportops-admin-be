@@ -1,6 +1,5 @@
-package com.supportops.api.modules.user.entity;
+package com.supportops.api.modules.tenant.entity;
 
-import com.supportops.api.common.tenant.TenantAware;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -15,35 +14,20 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "users")
-public class User implements TenantAware {
+@Table(name = "tenants")
+public class Tenant {
 
     @Id
     private UUID id;
 
-    @Column(nullable = false, unique = true)
-    private String email;
-
-    @Column(name = "password_hash", nullable = false)
-    private String passwordHash;
-
-    @Column(name = "first_name", nullable = false)
-    private String firstName;
-
-    @Column(name = "last_name", nullable = false)
-    private String lastName;
-
-    @Column(name = "avatar_url")
-    private String avatarUrl;
-
     @Column(nullable = false)
-    private String role;
+    private String name;
 
-    @Column(name = "tenant_id", nullable = false)
-    private UUID tenantId;
+    @Column(nullable = false, unique = true)
+    private String slug;
 
-    @Column(name = "tenant_name", nullable = false)
-    private String tenantName;
+    @Column(name = "logo_url")
+    private String logoUrl;
 
     @Column(name = "is_active", nullable = false)
     private boolean isActive;
@@ -57,17 +41,18 @@ public class User implements TenantAware {
     @PrePersist
     void prePersist() {
         Instant now = Instant.now();
-        this.createdAt = now;
-        this.updatedAt = now;
         if (this.id == null) {
             this.id = UUID.randomUUID();
         }
-        this.email = this.email.toLowerCase();
+        if (this.createdAt == null) {
+            this.createdAt = now;
+        }
+        this.updatedAt = now;
+        this.isActive = true;
     }
 
     @PreUpdate
     void preUpdate() {
         this.updatedAt = Instant.now();
-        this.email = this.email.toLowerCase();
     }
 }

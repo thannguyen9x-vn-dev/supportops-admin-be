@@ -1,5 +1,6 @@
 package com.supportops.api.common.security;
 
+import com.supportops.api.common.tenant.TenantContext;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -27,24 +28,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
         throws ServletException, IOException {
 
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        String token = authHeader.substring(7);
         try {
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            String token = authHeader.substring(7);
             Claims claims = jwtUtil.parseClaims(token);
             String role = String.valueOf(claims.get("role"));
+            UUID tenantId = UUID.fromString(String.valueOf(claims.get("tenantId")));
 
             CurrentUser currentUser = new CurrentUser(
                 UUID.fromString(claims.getSubject()),
                 String.valueOf(claims.get("email")),
                 role,
-                UUID.fromString(String.valueOf(claims.get("tenantId"))),
+                tenantId,
                 String.valueOf(claims.get("tenantName"))
             );
+            TenantContext.setCurrentTenantId(tenantId);
+            request.setAttribute("tenantId", tenantId);
 
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                 currentUser,
@@ -53,10 +57,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             );
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authentication);
+            filterChain.doFilter(request, response);
         } catch (JwtException | IllegalArgumentException ignored) {
             SecurityContextHolder.clearContext();
+            filterChain.doFilter(request, response);
+        } finally {
+            TenantContext.clear();
         }
-
-        filterChain.doFilter(request, response);
     }
 }
