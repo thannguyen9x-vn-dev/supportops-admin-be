@@ -542,7 +542,7 @@ Configure via `application.yml` or environment variables:
 
 | Variable | Description | Default |
 |---|---|---|
-| `SPRING_DATASOURCE_URL` | PostgreSQL connection URL | `jdbc:postgresql://localhost:5432/supportops` |
+| `SPRING_DATASOURCE_URL` | PostgreSQL connection URL | `jdbc:postgresql://localhost:5432/supportops_java` |
 | `SPRING_DATASOURCE_USERNAME` | Database username | `postgres` |
 | `SPRING_DATASOURCE_PASSWORD` | Database password | `postgres` |
 | `JWT_SECRET` | JWT signing secret | (must be set) |

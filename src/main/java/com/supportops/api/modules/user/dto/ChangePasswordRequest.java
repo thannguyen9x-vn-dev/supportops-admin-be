@@ -10,8 +10,10 @@ public record ChangePasswordRequest(
     String currentPassword,
 
     @NotBlank(message = "New password is required")
-    @Size(min = 10, max = 100, message = "Password must be between 10 and 100 characters")
+    @Size(min = 10, max = 32, message = "Password must be between 10 and 32 characters")
     @Pattern(regexp = ".*[a-z].*", message = "At least one lowercase character")
+    @Pattern(regexp = ".*[A-Z].*", message = "At least one uppercase character")
+    @Pattern(regexp = ".*[0-9].*", message = "At least one number")
     @Pattern(regexp = ".*[!@#$%^&*(),.?\":{}|<>].*", message = "At least one special character")
     String newPassword,
 
