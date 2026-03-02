@@ -11,7 +11,7 @@ public record RegisterRequest(
     String email,
 
     @NotBlank(message = "Password is required")
-    @Size(min = 10, message = "At least 10 characters")
+    @Size(min = 10, max = 100, message = "Password must be between 10 and 100 characters")
     @Pattern(regexp = ".*[a-z].*", message = "At least one lowercase character")
     @Pattern(regexp = ".*[!@#$%^&*(),.?\":{}|<>].*", message = "At least one special character")
     String password,
