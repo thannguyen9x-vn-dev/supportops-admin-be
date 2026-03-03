@@ -13,5 +13,7 @@ spring:
     enabled: false
 
 app:
+  storage:
+    enabled: false
   seed:
     dev-user-enabled: false

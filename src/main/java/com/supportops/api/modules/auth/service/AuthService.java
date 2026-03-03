@@ -12,10 +12,13 @@ import com.supportops.api.modules.auth.dto.RegisterRequest;
 import com.supportops.api.modules.auth.dto.RegisterResponse;
 import com.supportops.api.modules.auth.entity.RefreshToken;
 import com.supportops.api.modules.auth.repository.RefreshTokenRepository;
+import com.supportops.api.modules.tenant.entity.Tenant;
+import com.supportops.api.modules.tenant.repository.TenantRepository;
 import com.supportops.api.modules.user.dto.AuthUserResponse;
 import com.supportops.api.modules.user.entity.User;
 import com.supportops.api.modules.user.repository.UserRepository;
 import java.time.Instant;
+import java.util.Locale;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -28,6 +31,7 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final TenantRepository tenantRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AppAuthProperties authProperties;
@@ -50,7 +54,10 @@ public class AuthService {
             throw new ConflictException("EMAIL_ALREADY_EXISTS", "Email already exists");
         }
 
-        UUID tenantId = UUID.randomUUID();
+        Tenant tenant = new Tenant();
+        tenant.setName(request.organizationName().trim());
+        tenant.setSlug(generateTenantSlug(request.organizationName()));
+        tenant = tenantRepository.save(tenant);
 
         User user = new User();
         user.setEmail(request.email());
@@ -58,8 +65,8 @@ public class AuthService {
         user.setFirstName(request.firstName());
         user.setLastName(request.lastName());
         user.setRole("MEMBER");
-        user.setTenantId(tenantId);
-        user.setTenantName(request.organizationName());
+        user.setTenantId(tenant.getId());
+        user.setTenantName(tenant.getName());
         user.setActive(true);
 
         user = userRepository.save(user);
@@ -140,6 +147,25 @@ public class AuthService {
                 user.getRole(),
                 user.getTenantId(),
                 user.getTenantName());
+    }
+
+    private String generateTenantSlug(String organizationName) {
+        String baseSlug = organizationName
+            .trim()
+            .toLowerCase(Locale.ROOT)
+            .replaceAll("[^a-z0-9]+", "-")
+            .replaceAll("(^-|-$)", "");
+        if (baseSlug.isBlank()) {
+            baseSlug = "tenant";
+        }
+
+        String candidate = baseSlug;
+        int suffix = 1;
+        while (tenantRepository.existsBySlug(candidate)) {
+            suffix++;
+            candidate = baseSlug + "-" + suffix;
+        }
+        return candidate;
     }
 
     public record LoginResult(LoginResponse response, String refreshToken) {
