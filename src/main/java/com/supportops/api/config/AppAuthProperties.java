@@ -11,8 +11,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class AppAuthProperties {
 
     private String jwtSecret;
-    private long accessTokenTtlSeconds = 900;
+    private long accessTokenTtlSeconds = 3600;
     private long refreshTokenTtlSeconds = 604800;
+    private long passwordResetTokenTtlSeconds = 900;
     private boolean cookieSecure;
     private String cookieSameSite = "Lax";
     private List<String> allowedOrigins = List.of("http://localhost:3000");

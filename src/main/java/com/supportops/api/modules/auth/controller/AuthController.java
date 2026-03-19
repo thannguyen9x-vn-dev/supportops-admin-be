@@ -4,11 +4,14 @@ import com.supportops.api.common.dto.ApiResponse;
 import com.supportops.api.common.exception.UnauthorizedException;
 import com.supportops.api.common.util.AuthCookieUtil;
 import com.supportops.api.config.AppAuthProperties;
+import com.supportops.api.modules.auth.dto.AuthMessageResponse;
+import com.supportops.api.modules.auth.dto.ForgotPasswordRequest;
 import com.supportops.api.modules.auth.dto.LoginRequest;
 import com.supportops.api.modules.auth.dto.LoginResponse;
 import com.supportops.api.modules.auth.dto.RefreshTokenResponse;
 import com.supportops.api.modules.auth.dto.RegisterRequest;
 import com.supportops.api.modules.auth.dto.RegisterResponse;
+import com.supportops.api.modules.auth.dto.ResetPasswordRequest;
 import com.supportops.api.modules.auth.service.AuthService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -90,6 +93,18 @@ public class AuthController {
         );
 
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/forgot-password")
+    public ApiResponse<AuthMessageResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.forgotPassword(request);
+        return ApiResponse.of(new AuthMessageResponse("If the account exists, we sent a reset link."));
+    }
+
+    @PostMapping("/reset-password")
+    public ApiResponse<AuthMessageResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return ApiResponse.of(new AuthMessageResponse("Password has been reset successfully."));
     }
 
     private Optional<String> getRefreshTokenFromCookie(HttpServletRequest request) {

@@ -28,11 +28,24 @@ spring:
       max-file-size: 10MB
       max-request-size: 50MB
 
+  mail:
+    host: ${SPRING_MAIL_HOST:}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE:true}
+
 app:
   auth:
     jwt-secret: ${JWT_SECRET:dev-secret-key-min-32-characters-long-enough}
-    access-token-ttl-seconds: ${ACCESS_TOKEN_TTL_SECONDS:900}
+    access-token-ttl-seconds: ${ACCESS_TOKEN_TTL_SECONDS:3600}
     refresh-token-ttl-seconds: ${REFRESH_TOKEN_TTL_SECONDS:604800}
+    password-reset-token-ttl-seconds: ${PASSWORD_RESET_TOKEN_TTL_SECONDS:900}
     cookie-secure: ${COOKIE_SECURE:false}
     cookie-same-site: ${COOKIE_SAME_SITE:Lax}
     allowed-origins:
@@ -53,6 +66,34 @@ app:
     dev-user-first-name: ${SEED_DEV_USER_FIRST_NAME:Support}
     dev-user-last-name: ${SEED_DEV_USER_LAST_NAME:Admin}
     dev-tenant-name: ${SEED_DEV_TENANT_NAME:SupportOps Dev}
+
+  mail:
+    enabled: ${MAIL_ENABLED:true}
+    provider: ${MAIL_PROVIDER:smtp}
+    from: ${MAIL_FROM:noreply@supportops.local}
+    support-name: ${MAIL_SUPPORT_NAME:SupportOps}
+    ses-region: ${MAIL_SES_REGION:ap-southeast-1}
+    password-reset-url-template: ${PASSWORD_RESET_URL_TEMPLATE:http://localhost:3000/{locale}/reset-password?token={token}}
+
+  # Example SMTP config (default provider):
+  # MAIL_ENABLED=true
+  # MAIL_PROVIDER=smtp
+  # SPRING_MAIL_HOST=smtp.gmail.com
+  # SPRING_MAIL_PORT=587
+  # SPRING_MAIL_USERNAME=your_user
+  # SPRING_MAIL_PASSWORD=your_pass
+  # SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=true
+  # SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=true
+  # MAIL_FROM=noreply@your-domain.com
+  # PASSWORD_RESET_URL_TEMPLATE=https://your-web-domain/{locale}/reset-password?token={token}
+  #
+  # Example AWS SES API provider:
+  # MAIL_ENABLED=true
+  # MAIL_PROVIDER=ses
+  # MAIL_SES_REGION=ap-southeast-1
+  # AWS_ACCESS_KEY_ID=...
+  # AWS_SECRET_ACCESS_KEY=...
+  # PASSWORD_RESET_URL_TEMPLATE=https://your-web-domain/{locale}/reset-password?token={token}
 
 server:
   port: ${PORT:8080}

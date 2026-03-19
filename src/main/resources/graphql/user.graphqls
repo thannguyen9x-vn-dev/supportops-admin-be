@@ -1,0 +1,14 @@
+type Query {
+  meSettings: UserPreferences!
+}
+
+type UserPreferences {
+  companyNews: Boolean!
+  accountActivity: Boolean!
+  meetupsNearYou: Boolean!
+  newMessages: Boolean!
+  ratingReminders: Boolean!
+  itemUpdateNotif: Boolean!
+  itemCommentNotif: Boolean!
+  buyerReviewNotif: Boolean!
+}

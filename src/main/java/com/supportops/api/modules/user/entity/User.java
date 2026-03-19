@@ -36,6 +36,36 @@ public class User implements TenantAware {
     @Column(name = "avatar_url")
     private String avatarUrl;
 
+    @Column(name = "phone")
+    private String phone;
+
+    @Column(name = "birthday")
+    private String birthday;
+
+    @Column(name = "address")
+    private String address;
+
+    @Column(name = "city")
+    private String city;
+
+    @Column(name = "zip_code")
+    private String zipCode;
+
+    @Column(name = "country")
+    private String country;
+
+    @Column(name = "organization")
+    private String organization;
+
+    @Column(name = "department")
+    private String department;
+
+    @Column(name = "timezone", nullable = false)
+    private String timezone = "UTC";
+
+    @Column(name = "locale", nullable = false)
+    private String locale = "en";
+
     @Column(nullable = false)
     private String role;
 

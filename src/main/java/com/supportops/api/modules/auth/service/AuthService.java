@@ -2,15 +2,20 @@ package com.supportops.api.modules.auth.service;
 
 import com.supportops.api.common.exception.ConflictException;
 import com.supportops.api.common.exception.UnauthorizedException;
+import com.supportops.api.common.exception.ValidationException;
 import com.supportops.api.common.security.JwtUtil;
 import com.supportops.api.common.util.HashUtil;
 import com.supportops.api.config.AppAuthProperties;
+import com.supportops.api.modules.auth.dto.ForgotPasswordRequest;
 import com.supportops.api.modules.auth.dto.LoginRequest;
 import com.supportops.api.modules.auth.dto.LoginResponse;
 import com.supportops.api.modules.auth.dto.RefreshTokenResponse;
 import com.supportops.api.modules.auth.dto.RegisterRequest;
 import com.supportops.api.modules.auth.dto.RegisterResponse;
+import com.supportops.api.modules.auth.dto.ResetPasswordRequest;
+import com.supportops.api.modules.auth.entity.PasswordResetToken;
 import com.supportops.api.modules.auth.entity.RefreshToken;
+import com.supportops.api.modules.auth.repository.PasswordResetTokenRepository;
 import com.supportops.api.modules.auth.repository.RefreshTokenRepository;
 import com.supportops.api.modules.tenant.entity.Tenant;
 import com.supportops.api.modules.tenant.repository.TenantRepository;
@@ -21,20 +26,24 @@ import java.time.Instant;
 import java.util.Locale;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class AuthService {
 
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final TenantRepository tenantRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AppAuthProperties authProperties;
+    private final PasswordResetEmailService passwordResetEmailService;
 
     @Transactional
     public LoginResult login(LoginRequest request) {
@@ -113,6 +122,45 @@ public class AuthService {
                 });
     }
 
+    @Transactional
+    public void forgotPassword(ForgotPasswordRequest request) {
+        userRepository.findByEmailIgnoreCase(request.email()).ifPresent((user) -> {
+            String rawToken = issuePasswordResetToken(user);
+
+            if (!passwordResetEmailService.isEnabled()) {
+                return;
+            }
+
+            try {
+                passwordResetEmailService.sendResetPasswordEmail(user, rawToken);
+            } catch (Exception ex) {
+                log.warn("Failed to send password reset email for user={}", user.getEmail(), ex);
+            }
+        });
+    }
+
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        if (!request.newPassword().equals(request.confirmPassword())) {
+            throw new ValidationException("Passwords do not match");
+        }
+
+        String hashed = HashUtil.sha256(request.token());
+        PasswordResetToken passwordResetToken = passwordResetTokenRepository
+            .findByTokenHashAndUsedAtIsNullAndExpiresAtAfter(hashed, Instant.now())
+            .orElseThrow(() -> new UnauthorizedException("Invalid or expired reset link"));
+
+        User user = passwordResetToken.getUser();
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+
+        passwordResetToken.setUsedAt(Instant.now());
+        passwordResetTokenRepository.save(passwordResetToken);
+
+        // Revoke active sessions/tokens after password reset.
+        refreshTokenRepository.deleteByUser(user);
+    }
+
     private LoginResult issueTokensFor(User user) {
         TokenBundle bundle = issueTokenBundle(user);
 
@@ -166,6 +214,18 @@ public class AuthService {
             candidate = baseSlug + "-" + suffix;
         }
         return candidate;
+    }
+
+    private String issuePasswordResetToken(User user) {
+        passwordResetTokenRepository.deleteByUser(user);
+
+        String rawToken = UUID.randomUUID() + "." + UUID.randomUUID();
+        PasswordResetToken token = new PasswordResetToken();
+        token.setUser(user);
+        token.setTokenHash(HashUtil.sha256(rawToken));
+        token.setExpiresAt(Instant.now().plusSeconds(authProperties.getPasswordResetTokenTtlSeconds()));
+        passwordResetTokenRepository.save(token);
+        return rawToken;
     }
 
     public record LoginResult(LoginResponse response, String refreshToken) {
